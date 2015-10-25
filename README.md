@@ -12,3 +12,7 @@ For apps in which retrieving a context host view is not possible (as with strang
 
 Basically, GPL v3. I'd love for you to learn from this code, but please provide attribution if you use it in your own product, and please don't redistribute and call it your own. 
 Thanks!
+
+Screenshot 1 | Screenshot 2 | Screenshot 3
+:-------------------------:|:-------------------------:|:---------------------------:
+![Preview](/screen1.PNG)  | ![Preview](/screen2.PNG) |  ![Preview](/screen3.JPG)
