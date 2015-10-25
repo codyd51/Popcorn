@@ -15,4 +15,4 @@ Thanks!
 
 Screenshot 1 | Screenshot 2 | Screenshot 3
 :-------------------------:|:-------------------------:|:---------------------------:
-![Preview](/screen1.PNG)  | ![Preview](/screen2.PNG) |  ![Preview](/screen3.JPG)
+![Preview](/screen1.PNG)  | ![Preview](/screen2.PNG) |  ![Preview](/screen3.PNG)
