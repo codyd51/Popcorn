@@ -1,0 +1,9 @@
+Package: com.phillipt.popcorn
+Name: Popcorn
+Depends: mobilesubstrate
+Version: 1.0
+Architecture: iphoneos-arm
+Description: Peek and Pop on icons at your homescreen
+Maintainer: Phillip Tennen
+Author: Phillip Tennen
+Section: Tweaks
