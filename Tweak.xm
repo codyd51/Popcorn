@@ -15,9 +15,10 @@
 #define kContentViewTag 76326766
 
 @interface SBIconController (POPExtensions)
+@property (nonatomic, retain, setter=pop_setPoppedBundleID:) NSString* pop_poppedBundleID;
 -(void)pop_popIconViewFromGestureRecognizer:(UIGestureRecognizer*)gestureRec;
 -(void)pop_popIconView:(SBIconView*)iconView;
--(void)pop_unpop;
+-(void)pop_unpop:(UIButton*)sender;
 -(void)pop_actuatePopSimulateIfNecessary;
 @end
 
@@ -53,15 +54,24 @@ static int invocationAttempts = 0;
 -(void)pop_popIconView:(SBIconView*)iconView {
     if (![iconView.icon isKindOfClass:%c(SBApplicationIcon)]) return;
     //invocationAttempts++;
-    if ([[%c(SBIconController) sharedInstance] _canRevealShortcutMenu]) {
-        [[%c(SBIconController) sharedInstance] _revealMenuForIconView:iconView presentImmediately:YES];
+    BOOL isiOS9 = NO;
+    if ([[%c(SBIconController) sharedInstance] respondsToSelector:@selector(_canRevealShortcutMenu)]) {
+        isiOS9 = YES;
+    }
+    if (isiOS9) {
+        if ([[%c(SBIconController) sharedInstance] _canRevealShortcutMenu]) {
+            [[%c(SBIconController) sharedInstance] _revealMenuForIconView:iconView presentImmediately:YES];
+        }
     }
 
     contextHostView = [[CDTContextHostProvider sharedInstance] hostViewForApplicationWithBundleID:iconView.icon.applicationBundleID];
     if (!contextHostView) {
         //[[[UIAlertView alloc] initWithTitle:@"Uh-oh!" message:@"Something funny is going on!\nThe app was not alive in the background." delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles:nil] show];
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-            [[%c(SBIconController) sharedInstance] _dismissShortcutMenuAnimated:NO completionHandler:nil];
+            if (isiOS9) {
+                [[%c(SBIconController) sharedInstance] _dismissShortcutMenuAnimated:NO completionHandler:nil];
+            }
+
             if (invocationAttempts >= 5) {
                 //give up
                 [[[UIAlertView alloc] initWithTitle:@"Popcorn" message:@"There was an issue opening this app.\nPlease ensure the app is open in the background and try again." delegate:nil cancelButtonTitle:@"Dismiss" otherButtonTitles:nil] show];
@@ -78,8 +88,8 @@ static int invocationAttempts = 0;
     }
     //success! decrement invocation attempts
     invocationAttempts = 0;
-    
-    [[%c(SBIconController) sharedInstance] _dismissShortcutMenuAnimated:NO completionHandler:^(BOOL finished){
+
+    void(^completion)(void) = ^(void){
         UIView* keyWindow = [[[%c(SBIconController) sharedInstance] _currentFolderController] contentView];
         if ([keyWindow viewWithTag:kContentViewTag]) return;
 
@@ -91,7 +101,18 @@ static int invocationAttempts = 0;
 
         [contentView fadeBlurIn];
         [contentView presentMainContent];
-    }];
+
+        self.pop_poppedBundleID = iconView.icon.applicationBundleID;
+    };
+    
+    if (isiOS9) {
+        [[%c(SBIconController) sharedInstance] _dismissShortcutMenuAnimated:NO completionHandler:^(BOOL finished){
+            completion();
+        }];
+    }
+    else {
+        completion();
+    }
 }
 %new
 -(void)pop_unpop:(UIButton*)sender {
@@ -107,6 +128,8 @@ static int invocationAttempts = 0;
             [[keyWindow viewWithTag:kContentViewTag] removeFromSuperview];
         }
         [[CDTContextHostProvider sharedInstance] stopHostingForBundleID:sender.accessibilityHint];
+
+        self.pop_poppedBundleID = nil;
     }];
 }
 %new
@@ -144,6 +167,47 @@ static int invocationAttempts = 0;
         *(void**)(&vibrate) = dlsym(handle,"AudioServicesPlaySystemSoundWithVibration");
         vibrate(kSystemSoundID_Vibrate, nil, vDict);
     }
+}
+%new
+-(void)pop_setPoppedBundleID:(NSString*)bundleID {
+    objc_setAssociatedObject(self, @selector(pop_poppedBundleID), bundleID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+%new
+-(NSString*)pop_poppedBundleID {
+    return objc_getAssociatedObject(self, @selector(pop_poppedBundleID));
+}
+%end
+
+%hook SBUIController
+-(BOOL)clickedMenuButton {
+    %log;
+    /*
+    SBRootFolderController* currentFolderController = [[%c(SBIconController) sharedInstance] _currentFolderController];
+    if (currentFolderController) {
+        UIView* keyWindow = [currentFolderController contentView];
+        if (keyWindow) {
+            if ([keyWindow viewWithTag:kContentViewTag]) {
+                //the user has Popcorn open
+                UIButton* fakeButton = 
+            }
+        }
+    }
+    */
+    NSString* poppedBundleID = [[%c(SBIconController) sharedInstance] pop_poppedBundleID];
+    NSLog(@"poppedBundleID: %@", poppedBundleID);
+    if (poppedBundleID && ![poppedBundleID isEqualToString:@""]) {
+        NSLog(@"user had Popcorn open...");
+        //the user has popcorn open
+        UIButton* fakeButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        fakeButton.accessibilityHint = poppedBundleID;
+        [[%c(SBIconController) sharedInstance] pop_unpop:fakeButton];
+
+        return YES;
+    }
+    
+    NSLog(@"user did not have Popcorn open...");
+
+    return %orig;
 }
 %end
 
