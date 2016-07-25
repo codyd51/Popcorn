@@ -46,8 +46,10 @@ UIView* contextHostView;
 %new
 -(void)pop_popIconViewFromGestureRecognizer:(UIGestureRecognizer*)gestureRec {
     SBIconView* view = (SBIconView*)gestureRec.view;
+    if (![self isEditing]) {
     [[CDTContextHostProvider sharedInstance] launchSuspendedApplicationWithBundleID:view.icon.applicationBundleID];
     [self pop_popIconView:view];
+    }
 }
 static int invocationAttempts = 0;
 %new 

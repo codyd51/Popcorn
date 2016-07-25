@@ -55,6 +55,7 @@
 -(BOOL)_canRevealShortcutMenu;
 -(void)_revealMenuForIconView:(SBIconView*)icon presentImmediately:(BOOL)immediately;
 -(void)_dismissShortcutMenuAnimated:(BOOL)animated completionHandler:(id)completionHandler;
+-(BOOL)isEditing;
 @end
 @interface SBApplicationShortcutMenuBackgroundView : UIView
 @end
